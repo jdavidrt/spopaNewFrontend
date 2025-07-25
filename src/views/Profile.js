@@ -22,12 +22,14 @@ import { useAuth0, withAuthenticationRequired } from "@auth0/auth0-react";
 import { useSession } from "../utils/sessionManager";
 
 export const ProfileComponent = () => {
-  const { user } = useAuth0();
+  const { user, getAccessTokenSilently } = useAuth0();
   const { userType, updateUserType } = useSession();
 
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
   const [selectedRole, setSelectedRole] = useState(userType || "");
+  const [tokenInfo, setTokenInfo] = useState(null);
+  const [loadingToken, setLoadingToken] = useState(false);
 
   const roles = [
     {
@@ -70,23 +72,47 @@ export const ProfileComponent = () => {
     }
   };
 
+  const handleGetToken = async () => {
+    setLoadingToken(true);
+    try {
+      const token = await getAccessTokenSilently();
+
+      // Decode the token to show basic info (don't do this in production for security)
+      const tokenParts = token.split('.');
+      const payload = JSON.parse(atob(tokenParts[1]));
+
+      setTokenInfo({
+        token: token,
+        payload: payload,
+        expires: new Date(payload.exp * 1000).toLocaleString()
+      });
+    } catch (error) {
+      console.error('Failed to get token:', error);
+      setUpdateMessage('Failed to retrieve access token');
+    } finally {
+      setLoadingToken(false);
+    }
+  };
+
   const getCurrentRoleInfo = () => {
     return roles.find(role => role.value === userType) || null;
   };
 
   const currentRoleInfo = getCurrentRoleInfo();
 
-  // Format user registration date if available
-  const formatJoinDate = (dateString) => {
-    if (!dateString) return "Unknown";
+  // Format date helper
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
     try {
       return new Date(dateString).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch {
-      return "Unknown";
+      return "Invalid date";
     }
   };
 
@@ -155,6 +181,7 @@ export const ProfileComponent = () => {
       <Row>
         {/* User Information */}
         <Col lg={8}>
+          {/* Account Information */}
           <Card className="shadow-sm border-0 mb-4">
             <CardHeader className="bg-light border-0">
               <h5 className="mb-0">
@@ -184,8 +211,20 @@ export const ProfileComponent = () => {
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
+                    <Label className="fw-bold text-muted small">NICKNAME</Label>
+                    <p className="mb-0">{user.nickname || "Not set"}</p>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
                     <Label className="fw-bold text-muted small">LAST UPDATED</Label>
-                    <p className="mb-0">{formatJoinDate(user.updated_at)}</p>
+                    <p className="mb-0">{formatDate(user.updated_at)}</p>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label className="fw-bold text-muted small">LOCALE</Label>
+                    <p className="mb-0">{user.locale || "Not set"}</p>
                   </div>
                 </Col>
               </Row>
@@ -207,34 +246,116 @@ export const ProfileComponent = () => {
             </CardBody>
           </Card>
 
-          {/* Authentication Information */}
-          <Card className="shadow-sm border-0">
+          {/* Authentication Details */}
+          <Card className="shadow-sm border-0 mb-4">
             <CardHeader className="bg-light border-0">
               <h5 className="mb-0">
                 <FontAwesomeIcon icon="shield-alt" className="me-2 text-primary" />
-                Authentication Information
+                Authentication Details
               </h5>
             </CardHeader>
             <CardBody>
               <Row>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label className="fw-bold text-muted small">AUTHENTICATION STATUS</Label>
+                    <Label className="fw-bold text-muted small">PROVIDER</Label>
                     <div>
                       <Badge color="success" className="me-2">
                         <FontAwesomeIcon icon="check-circle" className="me-1" />
-                        Authenticated via Auth0
+                        Auth0
                       </Badge>
                     </div>
                   </div>
                 </Col>
                 <Col md={6}>
                   <div className="mb-3">
-                    <Label className="fw-bold text-muted small">STORAGE TYPE</Label>
-                    <p className="mb-0">Local Storage (Browser)</p>
+                    <Label className="fw-bold text-muted small">EMAIL VERIFICATION</Label>
+                    <div>
+                      <Badge color={user.email_verified ? "success" : "warning"}>
+                        <FontAwesomeIcon
+                          icon={user.email_verified ? "check-circle" : "exclamation-triangle"}
+                          className="me-1"
+                        />
+                        {user.email_verified ? "Verified" : "Unverified"}
+                      </Badge>
+                    </div>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label className="fw-bold text-muted small">SESSION TYPE</Label>
+                    <p className="mb-0">Client-side (localStorage)</p>
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label className="fw-bold text-muted small">CONNECTION</Label>
+                    <p className="mb-0">{user.sub.split('|')[0] || "Unknown"}</p>
                   </div>
                 </Col>
               </Row>
+
+              <div className="mt-3">
+                <Button
+                  color="info"
+                  size="sm"
+                  onClick={handleGetToken}
+                  disabled={loadingToken}
+                >
+                  {loadingToken ? (
+                    <>
+                      <Spinner size="sm" className="me-2" />
+                      Getting Token...
+                    </>
+                  ) : (
+                    <>
+                      <FontAwesomeIcon icon="key" className="me-2" />
+                      Show Access Token Info
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {tokenInfo && (
+                <div className="mt-3 p-3 bg-light rounded">
+                  <h6 className="fw-bold">Access Token Information</h6>
+                  <div className="mb-2">
+                    <Label className="fw-bold text-muted small">EXPIRES</Label>
+                    <p className="mb-1 small">{tokenInfo.expires}</p>
+                  </div>
+                  <div className="mb-2">
+                    <Label className="fw-bold text-muted small">AUDIENCE</Label>
+                    <p className="mb-1 small font-monospace">{tokenInfo.payload.aud || "Not set"}</p>
+                  </div>
+                  <div className="mb-2">
+                    <Label className="fw-bold text-muted small">SCOPES</Label>
+                    <p className="mb-1 small">{tokenInfo.payload.scope || "No scopes"}</p>
+                  </div>
+                  <details className="mt-2">
+                    <summary className="fw-bold text-muted small" style={{ cursor: 'pointer' }}>
+                      VIEW TOKEN (Development Only)
+                    </summary>
+                    <pre className="small bg-white p-2 mt-2 border rounded" style={{ fontSize: '10px', maxHeight: '150px', overflow: 'auto' }}>
+                      {tokenInfo.token}
+                    </pre>
+                  </details>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+
+          {/* Raw User Data */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="bg-light border-0">
+              <h5 className="mb-0">
+                <FontAwesomeIcon icon="code" className="me-2 text-primary" />
+                Raw User Object
+              </h5>
+            </CardHeader>
+            <CardBody>
+              <pre className="small bg-light p-3 rounded" style={{ maxHeight: '300px', overflow: 'auto' }}>
+                {JSON.stringify(user, null, 2)}
+              </pre>
             </CardBody>
           </Card>
         </Col>
@@ -326,6 +447,17 @@ export const ProfileComponent = () => {
                     </p>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-4 p-3 bg-warning bg-opacity-10 border border-warning rounded">
+                <h6 className="fw-bold text-warning">
+                  <FontAwesomeIcon icon="info-circle" className="me-2" />
+                  Note
+                </h6>
+                <p className="small mb-0">
+                  Your role selection is stored locally in your browser.
+                  You can change it anytime from this page.
+                </p>
               </div>
             </CardBody>
           </Card>
