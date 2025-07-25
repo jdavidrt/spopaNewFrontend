@@ -45,7 +45,6 @@ export const ProfileComponent = () => {
       description: "Manage system-wide operations and oversee internship processes"
     }
   ];
-
   const handleRoleUpdate = async () => {
     if (!selectedRole || selectedRole === userType) {
       setUpdateMessage("Please select a different role to update.");
@@ -58,6 +57,8 @@ export const ProfileComponent = () => {
     try {
       await updateUserType(selectedRole);
       setUpdateMessage(`Role successfully updated to ${selectedRole}!`);
+      // Reload the page to update NavBar and routes
+      window.location.reload();
     } catch (error) {
       console.error('Failed to update role:', error);
       setUpdateMessage(`Failed to update role: ${error.message}`);
@@ -138,12 +139,6 @@ export const ProfileComponent = () => {
                         <Badge color="success" className="mb-2">
                           <FontAwesomeIcon icon="check-circle" className="me-1" />
                           Verified Email
-                        </Badge>
-                      )}
-                      {!user.email_verified && (
-                        <Badge color="warning" className="mb-2">
-                          <FontAwesomeIcon icon="exclamation-triangle" className="me-1" />
-                          Unverified Email
                         </Badge>
                       )}
                     </div>
