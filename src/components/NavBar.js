@@ -25,47 +25,34 @@ const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const {
     user,
-    isAuthenticated: auth0Authenticated,
+    isAuthenticated,
     loginWithRedirect,
-    logout: auth0Logout,
+    logout,
   } = useAuth0();
 
-  const {
-    session,
-    isAuthenticated: sessionAuthenticated,
-    needsRegistration,
-    destroySession
-  } = useSession();
+  const { userType, needsRegistration, destroySession } = useSession();
 
   const toggle = () => setIsOpen(!isOpen);
 
   const logoutWithRedirect = async () => {
     try {
-      // First destroy server session
+      // Clear local session data
       await destroySession();
-
-      // Then logout from Auth0
-      auth0Logout({
-        logoutParams: {
-          returnTo: window.location.origin,
-        }
-      });
     } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback: logout from Auth0 even if session destruction fails
-      auth0Logout({
-        logoutParams: {
-          returnTo: window.location.origin,
-        }
-      });
+      console.error('Local session cleanup error:', error);
     }
+
+    // Logout from Auth0
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin,
+      }
+    });
   };
 
-  // Use session authentication state, but prevent navigation if registration needed
-  const isFullyAuthenticated = sessionAuthenticated && !needsRegistration;
-  const currentUser = session.user || user;
-  const userType = session.userType;
-  const showRegistrationWarning = sessionAuthenticated && needsRegistration;
+  // Use Auth0 authentication state and check if registration is complete
+  const isFullyAuthenticated = isAuthenticated && !needsRegistration;
+  const showRegistrationWarning = isAuthenticated && needsRegistration;
 
   return (
     <div className="nav-container">
@@ -183,7 +170,7 @@ const NavBar = () => {
 
             {/* Desktop Navigation */}
             <Nav className="d-none d-md-block" navbar>
-              {!sessionAuthenticated && (
+              {!isAuthenticated && (
                 <NavItem>
                   <Button
                     id="qsLoginBtn"
@@ -196,26 +183,26 @@ const NavBar = () => {
                 </NavItem>
               )}
 
-              {sessionAuthenticated && currentUser && (
+              {isAuthenticated && user && (
                 <UncontrolledDropdown nav inNavbar>
                   <DropdownToggle nav caret id="profileDropDown">
                     <img
-                      src={currentUser.picture}
+                      src={user.picture}
                       alt="Profile"
                       className="nav-user-profile rounded-circle me-2"
                       width="40"
                       height="40"
                     />
                     <span className="d-none d-lg-inline">
-                      {currentUser.name}
+                      {user.name}
                     </span>
                   </DropdownToggle>
                   <DropdownMenu>
                     <DropdownItem header>
                       <div>
-                        <strong>{currentUser.name}</strong>
+                        <strong>{user.name}</strong>
                         <br />
-                        <small className="text-muted">{currentUser.email}</small>
+                        <small className="text-muted">{user.email}</small>
                         {userType && (
                           <div>
                             <span className="badge badge-primary mt-1">
@@ -279,7 +266,7 @@ const NavBar = () => {
             </Nav>
 
             {/* Mobile Navigation */}
-            {!sessionAuthenticated && (
+            {!isAuthenticated && (
               <Nav className="d-md-none" navbar>
                 <NavItem>
                   <Button
@@ -294,7 +281,7 @@ const NavBar = () => {
               </Nav>
             )}
 
-            {sessionAuthenticated && currentUser && (
+            {isAuthenticated && user && (
               <Nav
                 className="d-md-none justify-content-between"
                 navbar
@@ -303,15 +290,15 @@ const NavBar = () => {
                 <NavItem>
                   <div className="user-info d-flex align-items-center">
                     <img
-                      src={currentUser.picture}
+                      src={user.picture}
                       alt="Profile"
                       className="nav-user-profile rounded-circle me-3"
                       width="50"
                       height="50"
                     />
                     <div>
-                      <h6 className="mb-0">{currentUser.name}</h6>
-                      <small className="text-muted">{currentUser.email}</small>
+                      <h6 className="mb-0">{user.name}</h6>
+                      <small className="text-muted">{user.email}</small>
                       {userType && (
                         <div>
                           <span className="badge badge-primary">

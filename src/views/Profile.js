@@ -1,3 +1,4 @@
+// fe/src/views/Profile.js
 import React, { useState } from "react";
 import {
   Container,
@@ -22,15 +23,11 @@ import { useSession } from "../utils/sessionManager";
 
 export const ProfileComponent = () => {
   const { user } = useAuth0();
-  const {
-    session,
-    updateUserType,
-    isAuthenticated: sessionAuthenticated
-  } = useSession();
+  const { userType, updateUserType } = useSession();
 
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
-  const [selectedRole, setSelectedRole] = useState(session.userType || "");
+  const [selectedRole, setSelectedRole] = useState(userType || "");
 
   const roles = [
     {
@@ -54,7 +51,7 @@ export const ProfileComponent = () => {
   ];
 
   const handleRoleUpdate = async () => {
-    if (!selectedRole || selectedRole === session.userType) {
+    if (!selectedRole || selectedRole === userType) {
       setUpdateMessage("Please select a different role to update.");
       return;
     }
@@ -74,7 +71,7 @@ export const ProfileComponent = () => {
   };
 
   const getCurrentRoleInfo = () => {
-    return roles.find(role => role.value === session.userType) || null;
+    return roles.find(role => role.value === userType) || null;
   };
 
   const currentRoleInfo = getCurrentRoleInfo();
@@ -210,38 +207,36 @@ export const ProfileComponent = () => {
             </CardBody>
           </Card>
 
-          {/* Session Information */}
-          {sessionAuthenticated && (
-            <Card className="shadow-sm border-0">
-              <CardHeader className="bg-light border-0">
-                <h5 className="mb-0">
-                  <FontAwesomeIcon icon="server" className="me-2 text-primary" />
-                  Session Information
-                </h5>
-              </CardHeader>
-              <CardBody>
-                <Row>
-                  <Col md={6}>
-                    <div className="mb-3">
-                      <Label className="fw-bold text-muted small">SESSION STATUS</Label>
-                      <div>
-                        <Badge color="success" className="me-2">
-                          <FontAwesomeIcon icon="check-circle" className="me-1" />
-                          Active
-                        </Badge>
-                      </div>
+          {/* Authentication Information */}
+          <Card className="shadow-sm border-0">
+            <CardHeader className="bg-light border-0">
+              <h5 className="mb-0">
+                <FontAwesomeIcon icon="shield-alt" className="me-2 text-primary" />
+                Authentication Information
+              </h5>
+            </CardHeader>
+            <CardBody>
+              <Row>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label className="fw-bold text-muted small">AUTHENTICATION STATUS</Label>
+                    <div>
+                      <Badge color="success" className="me-2">
+                        <FontAwesomeIcon icon="check-circle" className="me-1" />
+                        Authenticated via Auth0
+                      </Badge>
                     </div>
-                  </Col>
-                  <Col md={6}>
-                    <div className="mb-3">
-                      <Label className="fw-bold text-muted small">SESSION ID</Label>
-                      <p className="mb-0 font-monospace small">{session.sessionId || 'N/A'}</p>
-                    </div>
-                  </Col>
-                </Row>
-              </CardBody>
-            </Card>
-          )}
+                  </div>
+                </Col>
+                <Col md={6}>
+                  <div className="mb-3">
+                    <Label className="fw-bold text-muted small">STORAGE TYPE</Label>
+                    <p className="mb-0">Local Storage (Browser)</p>
+                  </div>
+                </Col>
+              </Row>
+            </CardBody>
+          </Card>
         </Col>
 
         {/* Role Management */}
@@ -307,26 +302,26 @@ export const ProfileComponent = () => {
                 {roles.map((role) => (
                   <div
                     key={role.value}
-                    className={`p-2 mb-2 rounded border ${session.userType === role.value ? 'border-primary bg-primary bg-opacity-10' : 'border-light'
+                    className={`p-2 mb-2 rounded border ${userType === role.value ? 'border-primary bg-primary bg-opacity-10' : 'border-light'
                       }`}
                   >
                     <div className="d-flex align-items-center mb-1">
                       <FontAwesomeIcon
                         icon={role.icon}
-                        className={`me-2 ${session.userType === role.value ? 'text-primary' : 'text-muted'
+                        className={`me-2 ${userType === role.value ? 'text-primary' : 'text-muted'
                           }`}
                       />
-                      <span className={`fw-bold black${session.userType === role.value ? 'text-primary' : ''
+                      <span className={`fw-bold ${userType === role.value ? 'text-primary' : ''
                         }`}>
                         {role.label}
                       </span>
-                      {session.userType === role.value && (
+                      {userType === role.value && (
                         <Badge color="primary" size="sm" className="ms-auto">
                           Current
                         </Badge>
                       )}
                     </div>
-                    <p className="black small text-muted mb-0">
+                    <p className="small text-muted mb-0">
                       {role.description}
                     </p>
                   </div>
