@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth0 } from "@auth0/auth0-react";
 import { useSession } from '../utils/sessionManager';
 
-// --- 🔧 Cambiar la URL para usar el API Gateway ---
+// Change the URL to use the API Gateway
 const API_BASE_URL = 'http://3.138.110.228:8000/api';
 
-// Componente de formulario genérico para añadir/editar ofertas
-// Ahora 'offer' puede ser null (para creación) o un objeto de oferta (para edición)
+// Generic form component for adding/editing offers
 function OfferForm({ offer, onSave, onCancel }) {
   const [formData, setFormData] = useState({});
 
   useEffect(() => {
-    if (offer) { // Si 'offer' tiene datos (modo edición)
+    if (offer) { // Edit mode
       setFormData({
         ...offer,
-        // Convierte el array de programas_academicos_buscados a string para el input de texto
+        // Convert array of academic programs to string for text input
         programas_academicos_buscados: Array.isArray(offer.programas_academicos_buscados)
           ? offer.programas_academicos_buscados.join(', ')
           : ''
       });
-    } else { // Si 'offer' es null o undefined (modo creación)
+    } else { // Create mode
       setFormData({
         nombre_empresa: '',
         sector_empresa: '',
         correo_electronico: '',
-        programas_academicos_buscados: '', // Se manejará como string separado por comas para el input
+        programas_academicos_buscados: '',
         titulo: '',
         cargo: '',
         horario: '',
@@ -38,7 +38,7 @@ function OfferForm({ offer, onSave, onCancel }) {
         observaciones: ''
       });
     }
-  }, [offer]); // Dependencia del 'offer' prop: se re-ejecuta si 'offer' cambia
+  }, [offer]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -54,7 +54,7 @@ function OfferForm({ offer, onSave, onCancel }) {
         .map(s => s.trim())
         .filter(s => s !== '')
     };
-    onSave(finalData); // Llama a la función onSave pasada desde el padre
+    onSave(finalData);
   };
 
   return (
@@ -80,10 +80,10 @@ function OfferForm({ offer, onSave, onCancel }) {
         maxHeight: '90vh',
         overflowY: 'auto'
       }}>
-        <h3>{offer ? 'Editar Oferta' : 'Nueva Oferta'}</h3>
+        <h3>{offer ? 'Edit Offer' : 'New Offer'}</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {Object.keys(formData).map((key) => {
-            // Excluye los campos '_id' y 'id' del renderizado
+            // Exclude '_id' and 'id' fields from rendering
             if (key === '_id' || key === 'id') return null;
 
             return (
@@ -112,10 +112,10 @@ function OfferForm({ offer, onSave, onCancel }) {
           })}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 20 }}>
             <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
-              {offer ? 'Guardar Cambios' : 'Crear Oferta'}
+              {offer ? 'Save Changes' : 'Create Offer'}
             </button>
             <button type="button" onClick={onCancel} style={{ padding: '10px 20px', marginLeft: 10, backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
-              Cancelar
+              Cancel
             </button>
           </div>
         </div>
@@ -124,15 +124,15 @@ function OfferForm({ offer, onSave, onCancel }) {
   );
 }
 
-// Componente para la tabla de estudiantes (solo admins)
+// Component for student table (admin only)
 function StudentTable({ students }) {
   return (
     <table border="1" cellPadding="8" style={{ width: '100%', marginTop: 20, borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ backgroundColor: '#f2f2f2' }}>
-          <th style={{ padding: 10, textAlign: 'left' }}>Nombre</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Paso actual (0/5)</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Empresa asignada</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Name</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Current Step (0/5)</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Assigned Company</th>
         </tr>
       </thead>
       <tbody>
@@ -140,7 +140,7 @@ function StudentTable({ students }) {
           <tr key={student.id} style={{ borderBottom: '1px solid #ddd' }}>
             <td style={{ padding: 10 }}>{student.nombre}</td>
             <td style={{ padding: 10 }}>{student.paso_actual} / 5</td>
-            <td style={{ padding: 10 }}>{student.empresa || 'Sin asignar'}</td>
+            <td style={{ padding: 10 }}>{student.empresa || 'Not assigned'}</td>
           </tr>
         ))}
       </tbody>
@@ -148,18 +148,18 @@ function StudentTable({ students }) {
   );
 }
 
-// Componente para la tabla de ofertas
+// Component for offers table
 function OfferTable({ offers, onEdit, onDelete, isStudent, appliedOffers, onApply }) {
   return (
     <table border="1" cellPadding="8" style={{ width: '100%', marginTop: 20, borderCollapse: 'collapse' }}>
       <thead>
         <tr style={{ backgroundColor: '#f2f2f2' }}>
-          <th style={{ padding: 10, textAlign: 'left' }}>Título</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Empresa</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Ciudad</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Modalidad</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Vacantes</th>
-          <th style={{ padding: 10, textAlign: 'left' }}>Acciones</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Title</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Company</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>City</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Modality</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Vacancies</th>
+          <th style={{ padding: 10, textAlign: 'left' }}>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -173,7 +173,16 @@ function OfferTable({ offers, onEdit, onDelete, isStudent, appliedOffers, onAppl
             <td style={{ padding: 10 }}>
               {isStudent ? (
                 appliedOffers.includes(offer._id) ? (
-                  <span style={{ color: 'green', fontWeight: 'bold' }}>Aplicado</span>
+                  <span style={{
+                    color: 'green',
+                    fontWeight: 'bold',
+                    padding: '8px 12px',
+                    backgroundColor: '#d4edda',
+                    borderRadius: 5,
+                    border: '1px solid #c3e6cb'
+                  }}>
+                    Applied
+                  </span>
                 ) : (
                   <button
                     onClick={() => onApply(offer._id)}
@@ -186,14 +195,14 @@ function OfferTable({ offers, onEdit, onDelete, isStudent, appliedOffers, onAppl
                       cursor: 'pointer'
                     }}
                   >
-                    Aplicar
+                    Apply
                   </button>
                 )
               ) : (
                 <>
-                  <button onClick={() => onEdit(offer)} style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => onEdit(offer)} style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>Edit</button>
                   <button onClick={() => onDelete(offer._id)} style={{ padding: '8px 12px', marginLeft: 5, backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
-                    Eliminar
+                    Delete
                   </button>
                 </>
               )}
@@ -205,9 +214,144 @@ function OfferTable({ offers, onEdit, onDelete, isStudent, appliedOffers, onAppl
   );
 }
 
-// Componente principal del Panel de Administración
+// LocalStorage utility functions for managing applications
+const applicationStorage = {
+  // Get the localStorage key for a specific user
+  getStorageKey: (userId) => `spopa_applied_offers_${userId}`,
+
+  // Load applied offers for a user
+  loadAppliedOffers: (userId) => {
+    try {
+      const key = applicationStorage.getStorageKey(userId);
+      const data = localStorage.getItem(key);
+
+      if (!data) {
+        // Initialize empty array if no data exists
+        const emptyData = [];
+        localStorage.setItem(key, JSON.stringify(emptyData));
+        return emptyData;
+      }
+
+      const parsed = JSON.parse(data);
+
+      // Ensure we have an array of objects with the expected structure
+      if (Array.isArray(parsed)) {
+        // If it's an array of strings (old format), convert to new format
+        if (parsed.length > 0 && typeof parsed[0] === 'string') {
+          const converted = parsed.map(offerId => ({
+            offerId: offerId,
+            userId: userId,
+            appliedAt: new Date().toISOString()
+          }));
+          applicationStorage.saveAppliedOffers(userId, converted);
+          return converted.map(app => app.offerId);
+        }
+
+        // If it's already in the new format, extract offer IDs
+        if (parsed.length > 0 && typeof parsed[0] === 'object') {
+          return parsed.map(app => app.offerId);
+        }
+
+        return parsed; // Empty array
+      }
+
+      return [];
+    } catch (error) {
+      console.error('Error loading applied offers:', error);
+      return [];
+    }
+  },
+
+  // Save applied offers for a user
+  saveAppliedOffers: (userId, applications) => {
+    try {
+      const key = applicationStorage.getStorageKey(userId);
+      localStorage.setItem(key, JSON.stringify(applications));
+      return true;
+    } catch (error) {
+      console.error('Error saving applied offers:', error);
+      return false;
+    }
+  },
+
+  // Add a new application
+  addApplication: (userId, offerId) => {
+    try {
+      const key = applicationStorage.getStorageKey(userId);
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+
+      // Check if application already exists
+      const alreadyApplied = existing.some(app =>
+        (typeof app === 'string' && app === offerId) ||
+        (typeof app === 'object' && app.offerId === offerId)
+      );
+
+      if (alreadyApplied) {
+        console.log('User has already applied to this offer');
+        return false;
+      }
+
+      // Create new application object
+      const newApplication = {
+        offerId: offerId,
+        userId: userId,
+        appliedAt: new Date().toISOString()
+      };
+
+      // Convert old format if necessary
+      const normalizedExisting = existing.map(app => {
+        if (typeof app === 'string') {
+          return {
+            offerId: app,
+            userId: userId,
+            appliedAt: new Date().toISOString()
+          };
+        }
+        return app;
+      });
+
+      const updated = [...normalizedExisting, newApplication];
+      localStorage.setItem(key, JSON.stringify(updated));
+
+      console.log('Application saved:', newApplication);
+      return true;
+    } catch (error) {
+      console.error('Error adding application:', error);
+      return false;
+    }
+  },
+
+  // Get all applications with full details
+  getApplicationDetails: (userId) => {
+    try {
+      const key = applicationStorage.getStorageKey(userId);
+      const data = localStorage.getItem(key);
+
+      if (!data) return [];
+
+      const parsed = JSON.parse(data);
+
+      // Convert old format to new format if necessary
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0] === 'string') {
+        return parsed.map(offerId => ({
+          offerId: offerId,
+          userId: userId,
+          appliedAt: new Date().toISOString()
+        }));
+      }
+
+      return parsed;
+    } catch (error) {
+      console.error('Error getting application details:', error);
+      return [];
+    }
+  }
+};
+
+// Main AdminDashboard component
 export default function AdminDashboard() {
-  const { hasRole, getCurrentUserId } = useSession();
+  const { user } = useAuth0();
+  const { hasRole } = useSession();
   const isStudent = hasRole && hasRole("Estudiante");
 
   const [students] = useState([
@@ -219,59 +363,90 @@ export default function AdminDashboard() {
   const [offers, setOffers] = useState([]);
   const [editingOffer, setEditingOffer] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
-
-  // --- Aplicaciones del estudiante ---
   const [appliedOffers, setAppliedOffers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch offers from API when component mounts
+  // Get current user ID from Auth0
+  const getCurrentUserId = () => {
+    return user?.sub || null;
+  };
+
+  // Load offers from API
   useEffect(() => {
-    fetch(`${API_BASE_URL}/offers`)
-      .then(res => res.json())
-      .then(data => setOffers(data))
-      .catch(() => setOffers([]));
+    const loadOffers = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/offers`);
+        const data = await response.json();
+        setOffers(data);
+      } catch (error) {
+        console.error('Error loading offers:', error);
+        setOffers([]);
+      }
+    };
+
+    loadOffers();
   }, []);
 
-  // Cargar aplicaciones desde localStorage al iniciar
+  // Load applied offers when user is available
   useEffect(() => {
-    if (isStudent && getCurrentUserId) {
+    if (isStudent && user?.sub) {
       const userId = getCurrentUserId();
-      const key = `appliedOffers_${userId}`;
-      let saved = localStorage.getItem(key);
-      if (!saved) {
-        localStorage.setItem(key, JSON.stringify([]));
-        saved = '[]';
-      }
-      setAppliedOffers(JSON.parse(saved)); // Now this is an array of IDs
-    }
-  }, [isStudent, getCurrentUserId]);
+      const loadedApplications = applicationStorage.loadAppliedOffers(userId);
+      setAppliedOffers(loadedApplications);
 
-  // Guardar aplicaciones en localStorage cuando cambian
-  useEffect(() => {
-    if (isStudent && getCurrentUserId) {
-      const userId = getCurrentUserId();
-      localStorage.setItem(`appliedOffers_${userId}`, JSON.stringify(appliedOffers));
+      console.log('Loaded applied offers for user', userId, ':', loadedApplications);
     }
-  }, [appliedOffers, isStudent, getCurrentUserId]);
+    setIsLoading(false);
+  }, [isStudent, user]);
 
-  // Función para aplicar a una oferta (guarda solo el ID)
-  const handleApply = (offerId) => {
-    if (!appliedOffers.includes(offerId)) {
-      setAppliedOffers([...appliedOffers, offerId]);
+  // Handle applying to an offer
+  const handleApply = async (offerId) => {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      console.error('No user ID available');
+      return;
+    }
+
+    if (!offerId) {
+      console.error('No offer ID provided');
+      return;
+    }
+
+    // Check if already applied
+    if (appliedOffers.includes(offerId)) {
+      console.log('User has already applied to this offer');
+      return;
+    }
+
+    // Add application to localStorage
+    const success = applicationStorage.addApplication(userId, offerId);
+
+    if (success) {
+      // Update local state
+      setAppliedOffers(prev => [...prev, offerId]);
+      console.log('Successfully applied to offer:', offerId);
+
+      // Optional: Show success message
+      alert('Application submitted successfully!');
+    } else {
+      console.error('Failed to save application');
+      alert('Failed to submit application. Please try again.');
     }
   };
 
-  // Función unificada para guardar (crear o actualizar) una oferta (solo local)
+  // Unified function to save (create or update) an offer (local only)
   const handleSaveOffer = (offerData) => {
     if (offerData._id) {
-      // Editar oferta existente
+      // Edit existing offer
       setOffers((prev) =>
         prev.map((o) => (o._id === offerData._id ? { ...offerData } : o))
       );
     } else {
-      // Crear nueva oferta
+      // Create new offer
       const newOffer = {
         ...offerData,
-        _id: 'o' + (offers.length + 1), // Genera un id simple
+        _id: 'o' + (offers.length + 1), // Generate simple id
       };
       setOffers((prev) => [...prev, newOffer]);
     }
@@ -281,32 +456,81 @@ export default function AdminDashboard() {
 
   const handleDelete = (id) => {
     if (!id) {
-      console.error('❌ Error: No se puede eliminar una oferta sin ID.');
+      console.error('Error: Cannot delete offer without ID.');
       return;
     }
-    if (!window.confirm('¿Está seguro de que desea eliminar esta oferta?')) {
+    if (!window.confirm('Are you sure you want to delete this offer?')) {
       return;
     }
-    setOffers((prev) => prev.filter((o) => o._id !== id)); // Filtra usando _id
+    setOffers((prev) => prev.filter((o) => o._id !== id));
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div style={{ padding: 20, textAlign: 'center' }}>
+        <h2>Loading...</h2>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
-      <h2 style={{ color: '#333' }}>Panel de Administrador</h2>
+      <h2 style={{ color: '#333' }}>
+        {isStudent ? 'Available Opportunities' : 'Administrator Panel'}
+      </h2>
 
-      {/* Solo admins ven estudiantes */}
+      {/* Debug information (development only) */}
+      {process.env.NODE_ENV === 'development' && isStudent && (
+        <div style={{
+          backgroundColor: '#f8f9fa',
+          padding: 15,
+          marginBottom: 20,
+          borderRadius: 5,
+          border: '1px solid #dee2e6'
+        }}>
+          <h6>Debug Info (Development Only)</h6>
+          <p><strong>User ID:</strong> {getCurrentUserId()}</p>
+          <p><strong>Applied Offers:</strong> {appliedOffers.length}</p>
+          <p><strong>Applied Offer IDs:</strong> {appliedOffers.join(', ') || 'None'}</p>
+          <details>
+            <summary>Application Details</summary>
+            <pre style={{ fontSize: '12px', marginTop: 10 }}>
+              {JSON.stringify(applicationStorage.getApplicationDetails(getCurrentUserId()), null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
+
+      {/* Only admins see students */}
       {!isStudent && (
         <>
-          <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>Estudiantes Registrados</h3>
+          <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>
+            Registered Students
+          </h3>
           <StudentTable students={students} />
         </>
       )}
 
-      <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>Ofertas Laborales</h3>
-      {/* Solo admins ven el botón de añadir */}
+      <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>
+        {isStudent ? 'Available Internship Offers' : 'Job Offers'}
+      </h3>
+
+      {/* Only admins see the add button */}
       {!isStudent && (
-        <button onClick={() => setShowCreateForm(true)} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer', marginBottom: 20 }}>
-          Añadir nueva oferta
+        <button
+          onClick={() => setShowCreateForm(true)}
+          style={{
+            padding: '10px 15px',
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: 5,
+            cursor: 'pointer',
+            marginBottom: 20
+          }}
+        >
+          Add New Offer
         </button>
       )}
 
@@ -318,23 +542,23 @@ export default function AdminDashboard() {
         }}
         onDelete={handleDelete}
         isStudent={isStudent}
-        appliedOffers={appliedOffers} // Pass only IDs
+        appliedOffers={appliedOffers}
         onApply={handleApply}
       />
 
-      {/* Formulario para CREAR nueva oferta (aparece como modal) */}
+      {/* Form for CREATING new offer (appears as modal) */}
       {!isStudent && showCreateForm && (
         <OfferForm
-          offer={null} // Pasa null para indicar modo creación
+          offer={null} // Pass null to indicate create mode
           onSave={handleSaveOffer}
           onCancel={() => setShowCreateForm(false)}
         />
       )}
 
-      {/* Formulario para EDITAR oferta existente (aparece como modal) */}
+      {/* Form for EDITING existing offer (appears as modal) */}
       {!isStudent && editingOffer && (
         <OfferForm
-          offer={editingOffer} // Pasa la oferta existente para edición
+          offer={editingOffer} // Pass existing offer for editing
           onSave={handleSaveOffer}
           onCancel={() => setEditingOffer(null)}
         />
