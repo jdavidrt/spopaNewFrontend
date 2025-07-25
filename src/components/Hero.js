@@ -33,13 +33,6 @@ const Hero = () => {
       icon: "user-shield",
       description: "Oversee the platform, manage users, and coordinate internship programs",
       color: "success"
-    },
-    {
-      value: "Empresa",
-      label: "Company",
-      icon: "building",
-      description: "Post internship opportunities and connect with talented students",
-      color: "info"
     }
   ];
 

@@ -357,7 +357,7 @@ const NavBar = () => {
                 )}
 
                 {/* Only show profile link if fully authenticated */}
-                {isFullyAuthenticated && (
+                {true && (
                   <NavItem>
                     <RouterNavLink
                       to="/profile"

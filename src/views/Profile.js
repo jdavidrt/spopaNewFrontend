@@ -43,12 +43,6 @@ export const ProfileComponent = () => {
       label: "Administrator",
       icon: "user-shield",
       description: "Manage system-wide operations and oversee internship processes"
-    },
-    {
-      value: "Empresa",
-      label: "Company",
-      icon: "building",
-      description: "Post internship opportunities and manage applications"
     }
   ];
 
