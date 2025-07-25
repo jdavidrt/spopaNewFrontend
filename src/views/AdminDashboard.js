@@ -480,27 +480,6 @@ export default function AdminDashboard() {
         {isStudent ? 'Available Opportunities' : 'Administrator Panel'}
       </h2>
 
-      {/* Debug information (development only) */}
-      {process.env.NODE_ENV === 'development' && isStudent && (
-        <div style={{
-          backgroundColor: '#f8f9fa',
-          padding: 15,
-          marginBottom: 20,
-          borderRadius: 5,
-          border: '1px solid #dee2e6'
-        }}>
-          <h6>Debug Info (Development Only)</h6>
-          <p><strong>User ID:</strong> {getCurrentUserId()}</p>
-          <p><strong>Applied Offers:</strong> {appliedOffers.length}</p>
-          <p><strong>Applied Offer IDs:</strong> {appliedOffers.join(', ') || 'None'}</p>
-          <details>
-            <summary>Application Details</summary>
-            <pre style={{ fontSize: '12px', marginTop: 10 }}>
-              {JSON.stringify(applicationStorage.getApplicationDetails(getCurrentUserId()), null, 2)}
-            </pre>
-          </details>
-        </div>
-      )}
 
       {/* Only admins see students */}
       {!isStudent && (

@@ -234,25 +234,6 @@ const Hero = () => {
         </div>
       )}
 
-      {/* Debug info in development */}
-      {process.env.NODE_ENV === 'development' && isAuthenticated && (
-        <div className="mt-4">
-          <details className="text-start">
-            <summary className="btn btn-outline-secondary btn-sm">
-              Debug Info (Development Only)
-            </summary>
-            <div className="mt-2 p-3 bg-light rounded small">
-              <strong>Session State:</strong><br />
-              User: {user?.name}<br />
-              User Type: {userType || 'None'}<br />
-              Is Registered: {isRegistered ? 'Yes' : 'No'}<br />
-              Needs Registration: {needsRegistration ? 'Yes' : 'No'}<br />
-              localStorage userType: {localStorage.getItem('spopa_user_type') || 'None'}<br />
-              localStorage registered: {localStorage.getItem('spopa_user_registered') || 'None'}
-            </div>
-          </details>
-        </div>
-      )}
     </div>
   );
 };
