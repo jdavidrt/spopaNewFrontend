@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useSession } from '../utils/sessionManager';
 
 // --- 🔧 Cambiar la URL para usar el API Gateway ---
-const API_BASE_URL = 'http://3.138.110.228:8000/api/admin'; // ✅ Ahora usa el API Gateway
+const API_BASE_URL = 'http://3.138.110.228:8000/api';
 
 // Componente de formulario genérico para añadir/editar ofertas
 // Ahora 'offer' puede ser null (para creación) o un objeto de oferta (para edición)
@@ -123,7 +124,7 @@ function OfferForm({ offer, onSave, onCancel }) {
   );
 }
 
-// Componente para la tabla de estudiantes (sin cambios, no interactúa con la API de ofertas)
+// Componente para la tabla de estudiantes (solo admins)
 function StudentTable({ students }) {
   return (
     <table border="1" cellPadding="8" style={{ width: '100%', marginTop: 20, borderCollapse: 'collapse' }}>
@@ -148,7 +149,7 @@ function StudentTable({ students }) {
 }
 
 // Componente para la tabla de ofertas
-function OfferTable({ offers, onEdit, onDelete }) {
+function OfferTable({ offers, onEdit, onDelete, isStudent, appliedOffers, onApply }) {
   return (
     <table border="1" cellPadding="8" style={{ width: '100%', marginTop: 20, borderCollapse: 'collapse' }}>
       <thead>
@@ -163,7 +164,6 @@ function OfferTable({ offers, onEdit, onDelete }) {
       </thead>
       <tbody>
         {offers.map((offer) => (
-          // Asegúrate de usar offer._id como clave
           <tr key={offer._id} style={{ borderBottom: '1px solid #ddd' }}>
             <td style={{ padding: 10 }}>{offer.titulo}</td>
             <td style={{ padding: 10 }}>{offer.nombre_empresa}</td>
@@ -171,10 +171,32 @@ function OfferTable({ offers, onEdit, onDelete }) {
             <td style={{ padding: 10 }}>{offer.modalidad}</td>
             <td style={{ padding: 10 }}>{offer.vacantes}</td>
             <td style={{ padding: 10 }}>
-              <button onClick={() => onEdit(offer)} style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>Editar</button>
-              <button onClick={() => onDelete(offer._id)} style={{ padding: '8px 12px', marginLeft: 5, backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
-                Eliminar
-              </button>
+              {isStudent ? (
+                appliedOffers.includes(offer._id) ? (
+                  <span style={{ color: 'green', fontWeight: 'bold' }}>Aplicado</span>
+                ) : (
+                  <button
+                    onClick={() => onApply(offer._id)}
+                    style={{
+                      padding: '8px 12px',
+                      backgroundColor: '#007bff',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 5,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Aplicar
+                  </button>
+                )
+              ) : (
+                <>
+                  <button onClick={() => onEdit(offer)} style={{ padding: '8px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>Editar</button>
+                  <button onClick={() => onDelete(offer._id)} style={{ padding: '8px 12px', marginLeft: 5, backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer' }}>
+                    Eliminar
+                  </button>
+                </>
+              )}
             </td>
           </tr>
         ))}
@@ -185,76 +207,79 @@ function OfferTable({ offers, onEdit, onDelete }) {
 
 // Componente principal del Panel de Administración
 export default function AdminDashboard() {
+  const { hasRole, getCurrentUserId } = useSession();
+  const isStudent = hasRole && hasRole("Estudiante");
+
   const [students] = useState([
-    // Datos de prueba para estudiantes (ya que no hay un endpoint de estudiantes en tu backend actual)
     { id: 's1', nombre: 'Juan Pérez', paso_actual: 3, empresa: 'Tech Solutions' },
     { id: 's2', nombre: 'Maria García', paso_actual: 1, empresa: '' },
     { id: 's3', nombre: 'Pedro López', paso_actual: 5, empresa: 'Global Corp' },
   ]);
 
   const [offers, setOffers] = useState([]);
-  const [editingOffer, setEditingOffer] = useState(null); // Objeto de oferta cuando se está editando
-  const [showCreateForm, setShowCreateForm] = useState(false); // Nuevo estado para controlar la visibilidad del formulario de creación
+  const [editingOffer, setEditingOffer] = useState(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
-  // --- Funciones para interactuar con la API ---
+  // --- Aplicaciones del estudiante ---
+  const [appliedOffers, setAppliedOffers] = useState([]);
 
-  const fetchOffers = async () => {
-    try {
-      console.log('🔄 Fetching offers from:', `${API_BASE_URL}/offers`);
-      const response = await fetch(`${API_BASE_URL}/offers`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      console.log('✅ Ofertas obtenidas:', data);
-      setOffers(data);
-    } catch (error) {
-      console.error('❌ Error al obtener las ofertas:', error);
-      // Podrías mostrar una notificación al usuario aquí
-    }
-  };
-
+  // Fetch offers from API when component mounts
   useEffect(() => {
-    fetchOffers();
+    fetch(`${API_BASE_URL}/offers`)
+      .then(res => res.json())
+      .then(data => setOffers(data))
+      .catch(() => setOffers([]));
   }, []);
 
-  // Función unificada para guardar (crear o actualizar) una oferta
-  const handleSaveOffer = async (offerData) => {
-    try {
-      let response;
-      if (offerData._id) { // Si la oferta tiene un _id, es una actualización
-        console.log('🔄 Actualizando oferta:', offerData._id);
-        response = await fetch(`${API_BASE_URL}/offers/${offerData._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(offerData),
-        });
-      } else { // Si no tiene _id, es una nueva creación
-        console.log('🔄 Creando nueva oferta');
-        response = await fetch(`${API_BASE_URL}/offers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(offerData),
-        });
+  // Cargar aplicaciones desde localStorage al iniciar
+  useEffect(() => {
+    if (isStudent && getCurrentUserId) {
+      const userId = getCurrentUserId();
+      const key = `appliedOffers_${userId}`;
+      let saved = localStorage.getItem(key);
+      if (!saved) {
+        localStorage.setItem(key, JSON.stringify([]));
+        saved = '[]';
       }
+      setAppliedOffers(JSON.parse(saved)); // Now this is an array of IDs
+    }
+  }, [isStudent, getCurrentUserId]);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(`HTTP error! status: ${response.status} - ${errorData.detail || response.statusText}`);
-      }
+  // Guardar aplicaciones en localStorage cuando cambian
+  useEffect(() => {
+    if (isStudent && getCurrentUserId) {
+      const userId = getCurrentUserId();
+      localStorage.setItem(`appliedOffers_${userId}`, JSON.stringify(appliedOffers));
+    }
+  }, [appliedOffers, isStudent, getCurrentUserId]);
 
-      const savedOffer = await response.json();
-      console.log('✅ Oferta guardada:', savedOffer);
-      fetchOffers(); // Refresca la lista completa de ofertas
-      setEditingOffer(null); // Cierra el formulario de edición
-      setShowCreateForm(false); // Cierra el formulario de creación
-    } catch (error) {
-      console.error('❌ Error al guardar la oferta:', error);
-      alert(`Error al guardar la oferta: ${error.message}`); // Mensaje de error al usuario
+  // Función para aplicar a una oferta (guarda solo el ID)
+  const handleApply = (offerId) => {
+    if (!appliedOffers.includes(offerId)) {
+      setAppliedOffers([...appliedOffers, offerId]);
     }
   };
 
-  const handleDelete = async (id) => {
+  // Función unificada para guardar (crear o actualizar) una oferta (solo local)
+  const handleSaveOffer = (offerData) => {
+    if (offerData._id) {
+      // Editar oferta existente
+      setOffers((prev) =>
+        prev.map((o) => (o._id === offerData._id ? { ...offerData } : o))
+      );
+    } else {
+      // Crear nueva oferta
+      const newOffer = {
+        ...offerData,
+        _id: 'o' + (offers.length + 1), // Genera un id simple
+      };
+      setOffers((prev) => [...prev, newOffer]);
+    }
+    setEditingOffer(null);
+    setShowCreateForm(false);
+  };
+
+  const handleDelete = (id) => {
     if (!id) {
       console.error('❌ Error: No se puede eliminar una oferta sin ID.');
       return;
@@ -262,46 +287,43 @@ export default function AdminDashboard() {
     if (!window.confirm('¿Está seguro de que desea eliminar esta oferta?')) {
       return;
     }
-    try {
-      console.log('🔄 Eliminando oferta:', id);
-      const response = await fetch(`${API_BASE_URL}/offers/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      console.log('✅ Oferta eliminada');
-      setOffers((prev) => prev.filter((o) => o._id !== id)); // Filtra usando _id
-    } catch (error) {
-      console.error('❌ Error al eliminar la oferta:', error);
-      alert('Error al eliminar la oferta. Por favor, intente de nuevo.');
-    }
+    setOffers((prev) => prev.filter((o) => o._id !== id)); // Filtra usando _id
   };
 
   return (
     <div style={{ padding: 20, fontFamily: 'Arial, sans-serif' }}>
       <h2 style={{ color: '#333' }}>Panel de Administrador</h2>
 
-
-      <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>Estudiantes Registrados</h3>
-      <StudentTable students={students} />
+      {/* Solo admins ven estudiantes */}
+      {!isStudent && (
+        <>
+          <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>Estudiantes Registrados</h3>
+          <StudentTable students={students} />
+        </>
+      )}
 
       <h3 style={{ borderBottom: '1px solid #eee', paddingBottom: 10, marginTop: 30 }}>Ofertas Laborales</h3>
-      <button onClick={() => setShowCreateForm(true)} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer', marginBottom: 20 }}>
-        Añadir nueva oferta
-      </button>
+      {/* Solo admins ven el botón de añadir */}
+      {!isStudent && (
+        <button onClick={() => setShowCreateForm(true)} style={{ padding: '10px 15px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: 5, cursor: 'pointer', marginBottom: 20 }}>
+          Añadir nueva oferta
+        </button>
+      )}
 
       <OfferTable
         offers={offers}
         onEdit={(offer) => {
-          setEditingOffer(offer); // Establece la oferta a editar
-          setShowCreateForm(false); // Asegúrate de que el formulario de creación no esté abierto
+          setEditingOffer(offer);
+          setShowCreateForm(false);
         }}
         onDelete={handleDelete}
+        isStudent={isStudent}
+        appliedOffers={appliedOffers} // Pass only IDs
+        onApply={handleApply}
       />
 
       {/* Formulario para CREAR nueva oferta (aparece como modal) */}
-      {showCreateForm && (
+      {!isStudent && showCreateForm && (
         <OfferForm
           offer={null} // Pasa null para indicar modo creación
           onSave={handleSaveOffer}
@@ -310,7 +332,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Formulario para EDITAR oferta existente (aparece como modal) */}
-      {editingOffer && (
+      {!isStudent && editingOffer && (
         <OfferForm
           offer={editingOffer} // Pasa la oferta existente para edición
           onSave={handleSaveOffer}

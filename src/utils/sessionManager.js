@@ -7,6 +7,11 @@ import { useAuth0 } from "@auth0/auth0-react";
 const USER_TYPE_KEY = 'spopa_user_type';
 const USER_REGISTRATION_KEY = 'spopa_user_registered';
 
+// Ensure USER_TYPE_KEY exists in localStorage on load
+if (!localStorage.getItem(USER_TYPE_KEY)) {
+    localStorage.setItem(USER_TYPE_KEY, '');
+}
+
 // Valid user types
 const VALID_USER_TYPES = ['Estudiante', 'Administrativo', 'Empresa'];
 
@@ -242,3 +247,9 @@ export default {
     VALID_USER_TYPES,
     storage
 };
+
+export function getCurrentUserId() {
+    // If you store user info in localStorage/session, adjust accordingly
+    const user = JSON.parse(localStorage.getItem('auth0:user'));
+    return user?.sub || 'guest';
+}

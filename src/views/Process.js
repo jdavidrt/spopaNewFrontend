@@ -1,100 +1,49 @@
 // frontend/src/components/Procesos.js
 import React, { useEffect, useState } from "react";
+import { useSession, getCurrentUserId } from "../utils/sessionManager";
 
-const API_URL = process.env.REACT_APP_PROCESS_API || "http://localhost:3010/api/process";
-
-console.log("🪼🪼🪼🪼🪼🪼", API_URL)
 function Process() {
-  const [process, setProcesos] = useState([]);
-  const [nuevoProceso, setNuevoProceso] = useState({
-    estudiante_id: "",
-    oferta_id: "",
-    profesor_id: "",
-    estado: "pendiente_tutor",
-  });
+  const { hasRole } = useSession();
+  const isStudent = hasRole && hasRole("Estudiante");
+  const [appliedOffers, setAppliedOffers] = useState([]);
   const [mensaje, setMensaje] = useState("");
 
-  // Obtener todos los procesos al cargar el componente
+  // Load applied offers (full offer objects) from localStorage for the current student
   useEffect(() => {
-    fetch(API_URL)
-      .then((res) => res.json())
-      .then(setProcesos)
-      .catch(() => setMensaje("Error al cargar procesos"));
-  }, []);
-
-  // Crear un nuevo proceso
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMensaje("");
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nuevoProceso),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setProcesos([...process, data]);
-      setMensaje("Proceso creado correctamente");
-    } catch {
-      setMensaje("Error al crear proceso");
+    if (isStudent && getCurrentUserId) {
+      const userId = getCurrentUserId();
+      const saved = localStorage.getItem(`appliedOffers_${userId}`);
+      setAppliedOffers(saved ? JSON.parse(saved) : []);
     }
-  };
-
-  // Cambiar estado de un proceso
-  const cambiarEstado = async (id, nuevoEstado) => {
-    setMensaje("");
-    try {
-      const res = await fetch(`${API_URL}/${id}/estado`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ estado: nuevoEstado }),
-      });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setProcesos(process.map(p => (p.id === id ? data : p)));
-      setMensaje("Estado actualizado");
-    } catch {
-      setMensaje("Error al actualizar estado");
-    }
-  };
+  }, [isStudent, getCurrentUserId]);
 
   return (
     <div>
       <h2>Procesos de Inscripción</h2>
       {mensaje && <p>{mensaje}</p>}
-      <ul>
-        {process.map((p) => (
-          <li key={p.id}>
-            Proceso #{p.id} - Estado: {p.estado}
-            <button onClick={() => cambiarEstado(p.id, "iniciado")}>Iniciar</button>
-            <button onClick={() => cambiarEstado(p.id, "aprobado")}>Aprobar</button>
-            <button onClick={() => cambiarEstado(p.id, "rechazado")}>Rechazar</button>
-          </li>
-        ))}
-      </ul>
-      <h3>Crear nuevo proceso</h3>
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="ID Estudiante"
-          value={nuevoProceso.estudiante_id}
-          onChange={e => setNuevoProceso({ ...nuevoProceso, estudiante_id: e.target.value })}
-          required
-        />
-        <input
-          placeholder="ID Oferta"
-          value={nuevoProceso.oferta_id}
-          onChange={e => setNuevoProceso({ ...nuevoProceso, oferta_id: e.target.value })}
-          required
-        />
-        <input
-          placeholder="ID Profesor"
-          value={nuevoProceso.profesor_id}
-          onChange={e => setNuevoProceso({ ...nuevoProceso, profesor_id: e.target.value })}
-          required
-        />
-        <button type="submit">Crear</button>
-      </form>
+      {isStudent ? (
+        <>
+          <h3>Ofertas a las que has aplicado</h3>
+          {appliedOffers.length === 0 ? (
+            <p>No has aplicado a ninguna oferta.</p>
+          ) : (
+            <ul>
+              {appliedOffers.map((offer, idx) => (
+                <li key={offer._id || idx}>
+                  <b>{offer.titulo}</b> en <b>{offer.nombre_empresa}</b> ({offer.ciudad})<br />
+                  Modalidad: {offer.modalidad} | Vacantes: {offer.vacantes}
+                </li>
+              ))}
+            </ul>
+          )}
+          <pre>
+            {/* Mostrar el JSON completo de procesos del estudiante */}
+            {JSON.stringify(appliedOffers, null, 2)}
+          </pre>
+        </>
+      ) : (
+        <p>Solo los estudiantes pueden ver sus procesos de aplicación aquí.</p>
+      )}
     </div>
   );
 }

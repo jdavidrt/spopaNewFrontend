@@ -55,8 +55,8 @@ const NavBar = () => {
   const navigationItems = {
     student: [
       {
-        path: "/studentoffers",
-        label: "Student Offers",
+        path: "/admin",
+        label: "Available Offers", // Changed label for students
         icon: "briefcase"
       },
       {
