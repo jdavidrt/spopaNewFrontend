@@ -3,7 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useSession } from '../utils/sessionManager';
 
 // Change the URL to use the API Gateway
-const API_BASE_URL = 'https://3.138.110.228:8000/api';
+const API_BASE_URL = 'http://3.138.110.228:8000/api';
 
 // Generic form component for adding/editing offers
 function OfferForm({ offer, onSave, onCancel }) {

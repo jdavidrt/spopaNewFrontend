@@ -3,7 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useSession } from "../utils/sessionManager";
 
 // API base URL - change to match your setup
-const API_BASE_URL = 'https://3.138.110.228:8000/api';
+const API_BASE_URL = 'http://3.138.110.228:8000/api';
 
 // LocalStorage utility functions for managing applications (same as AdminDashboard)
 const applicationStorage = {
