@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 // --- 🔧 Cambiar la URL para usar el API Gateway ---
-const API_BASE_URL = 'http://localhost:3010/api/admin'; // ✅ Ahora usa el API Gateway
+const API_BASE_URL = 'http://3.138.110.228:8000/api/admin'; // ✅ Ahora usa el API Gateway
 
 // Componente de formulario genérico para añadir/editar ofertas
 // Ahora 'offer' puede ser null (para creación) o un objeto de oferta (para edición)
