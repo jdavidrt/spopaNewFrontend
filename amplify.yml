@@ -1,0 +1,29 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # Install dependencies
+        - npm ci
+        # Verify Node.js version
+        - node --version
+        - npm --version
+    build:
+      commands:
+        # Build the React application
+        - echo "Building React application for production..."
+        - npm run build
+        # Optional: Print build info
+        - echo "Build completed successfully"
+        - ls -la build/
+  artifacts:
+    # Specify the build output directory
+    baseDirectory: build
+    files:
+      - '**/*'
+  cache:
+    paths:
+      # Cache node_modules to speed up subsequent builds
+      - node_modules/**/*
+      # Cache npm cache
+      - ~/.npm/**/*
